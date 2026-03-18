@@ -2,50 +2,62 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Trò Chơi Thám Hiểm Di Sản</title>
-    <!-- Nhúng Tailwind CSS để giữ nguyên giao diện đẹp mắt -->
+    <!-- Nhúng Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Tùy chỉnh hiệu ứng hiển thị */
-        .screen { display: none; }
-        .screen.active { display: block; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Hiệu ứng chuyển cảnh */
+        .screen { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .screen.active { display: block; opacity: 1; }
+        
+        /* Container Queries: Chìa khóa để chữ co giãn hoàn hảo theo khung Game */
+        .game-board {
+            container-type: inline-size;
+            aspect-ratio: 16/9;
+        }
+
+        /* Ẩn bớt thanh cuộn trên mobile */
+        body { overscroll-behavior-y: contain; }
     </style>
 </head>
-<body class="w-full h-screen bg-[#2c1e16] flex items-center justify-center p-2 m-0 overflow-hidden font-sans">
+<body class="w-full h-screen bg-[#2c1e16] flex items-center justify-center p-0 md:p-2 m-0 overflow-hidden font-sans">
 
-    <!-- Container chính giữ tỷ lệ 16:9 -->
-    <div class="relative w-full max-w-5xl bg-white shadow-2xl overflow-hidden rounded-xl ring-4 ring-amber-900/50" style="aspect-ratio: 16/9;">
+    <!-- Container chính giữ tỷ lệ 16:9 và định nghĩa Container Size -->
+    <div class="game-board relative w-full max-w-5xl bg-black shadow-2xl overflow-hidden md:rounded-xl ring-0 md:ring-4 ring-amber-900/50">
         
+        <!-- Nút Bật/Tắt Âm thanh -->
+        <button id="btn-mute" onclick="toggleMute()" class="absolute top-[3%] right-[2%] z-50 bg-white/90 p-[1.5cqi] rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center aspect-square border-2 border-amber-900/20 hover:scale-105 active:scale-95" title="Bật/Tắt âm thanh">
+            <span id="mute-icon" class="leading-none drop-shadow-sm" style="font-size: 3cqi;">🔊</span>
+        </button>
+
         <!-- ================= MÀN HÌNH 1: BẮT ĐẦU ================= -->
-        <div id="screen-start" class="screen active absolute inset-0 fade-in">
+        <div id="screen-start" class="screen active absolute inset-0">
             <img src="https://lh3.googleusercontent.com/d/1WdlihIamNab6kqGlk53XtsgApnjP2_Hi" alt="Bắt đầu" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none">
-            <!-- Nút bấm vô hình -->
-            <button onclick="startGame()" class="absolute cursor-pointer rounded-full outline-none hover:bg-white/20 active:bg-black/20 transition-colors duration-200 z-10" style="top: 64%; left: 56.5%; width: 32%; height: 19%;" title="Bắt đầu thử thách"></button>
+            <!-- Nút bấm vô hình (khớp với ảnh) -->
+            <button onclick="startGame()" class="absolute cursor-pointer rounded-full outline-none hover:bg-white/20 active:bg-black/30 transition-colors duration-200 z-10" style="top: 64%; left: 56.5%; width: 32%; height: 19%;" title="Bắt đầu thử thách"></button>
         </div>
 
         <!-- ================= MÀN HÌNH 2: BẢN ĐỒ ================= -->
-        <div id="screen-map" class="screen absolute inset-0 fade-in">
+        <div id="screen-map" class="screen absolute inset-0">
             <img src="https://lh3.googleusercontent.com/d/1CyrtmZu8T00Dhrgmox4InscwlRT7Iac2" alt="Bản đồ" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none">
             
-            <!-- Vùng chứa các điểm trên bản đồ -->
             <div id="map-nodes-container"></div>
 
-            <!-- Gấu trúc -->
             <div id="panda" class="absolute z-30 transition-all duration-700 ease-in-out pointer-events-none" style="transform: translate(-50%, -80%); top: 83%; left: 13%;">
-                <div class="text-4xl sm:text-5xl md:text-6xl animate-bounce drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">🐼</div>
+                <!-- Font size tự co giãn theo cqi -->
+                <div class="animate-bounce drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" style="font-size: 6cqi;">🐼</div>
             </div>
         </div>
 
         <!-- ================= MÀN HÌNH 3: CÂU HỎI ================= -->
-        <div id="screen-question" class="screen absolute inset-0 fade-in">
+        <div id="screen-question" class="screen absolute inset-0">
             <img src="https://lh3.googleusercontent.com/d/1bnwaFbAxC72yS7p2ToX8eXgQmxDX3B3_" alt="Câu hỏi" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none">
             
-            <!-- Nội dung câu hỏi -->
-            <div class="absolute top-[6%] sm:top-[8%] left-[10%] right-[10%] bg-white/95 border-2 sm:border-4 border-amber-900 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center shadow-lg flex flex-col justify-center items-center h-[12%] sm:h-[15%]">
-                <p id="question-text" class="text-xs sm:text-base md:text-xl font-bold text-amber-950 px-2 line-clamp-3"></p>
+            <!-- Khung chứa Nội dung câu hỏi: Căn giữa tuyệt đối -->
+            <div class="absolute bg-white/95 border-2 md:border-4 border-amber-900 rounded-lg shadow-lg flex flex-col justify-center items-center px-[3%]" style="top: 7%; left: 10%; width: 80%; height: 13%;">
+                <!-- Font size dùng cqi đảm bảo không bao giờ tràn -->
+                <p id="question-text" class="font-bold text-amber-950 text-center w-full leading-tight" style="font-size: 2.2cqi;"></p>
             </div>
 
             <!-- Vùng chứa 4 đáp án -->
@@ -53,17 +65,17 @@
         </div>
 
         <!-- ================= MÀN HÌNH 4: CHIẾN THẮNG ================= -->
-        <div id="screen-won" class="screen absolute inset-0 fade-in">
+        <div id="screen-won" class="screen absolute inset-0">
             <img src="https://lh3.googleusercontent.com/d/1CyrtmZu8T00Dhrgmox4InscwlRT7Iac2" alt="Bản đồ" class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none">
             <div class="absolute inset-0 bg-amber-900/60 backdrop-blur-sm flex items-center justify-center">
-                <div class="bg-[#fffbeb] p-8 sm:p-12 rounded-3xl shadow-2xl border-4 sm:border-8 border-yellow-500 text-center z-10 w-[80%] max-w-xl transform scale-110 transition-transform duration-500">
-                    <div class="text-7xl sm:text-9xl mb-4 animate-bounce drop-shadow-xl">🏆🐼</div>
-                    <h1 class="text-3xl sm:text-5xl font-black text-red-600 mb-2 sm:mb-4 uppercase drop-shadow-sm">Chiến thắng!</h1>
-                    <p class="text-sm sm:text-xl text-amber-900 font-bold mb-6 sm:mb-8">
+                <div class="bg-[#fffbeb] p-[4cqi] rounded-3xl shadow-2xl border-4 md:border-8 border-yellow-500 text-center z-10 w-[80%] max-w-xl flex flex-col items-center">
+                    <div class="animate-bounce drop-shadow-xl mb-[2cqi]" style="font-size: 10cqi;">🏆🐼</div>
+                    <h1 class="font-black text-red-600 uppercase drop-shadow-sm mb-[1cqi]" style="font-size: 5cqi;">Chiến thắng!</h1>
+                    <p class="text-amber-900 font-bold mb-[3cqi] leading-snug" style="font-size: 2.2cqi;">
                         Tuyệt vời! Bạn đã xuất sắc vượt qua mọi thử thách và trở thành <br/> 
-                        <span class="text-red-600 text-lg sm:text-2xl mt-2 inline-block uppercase">"Nhà thám hiểm di sản"</span>
+                        <span class="text-red-600 uppercase mt-[1cqi] inline-block" style="font-size: 2.8cqi;">"Nhà thám hiểm di sản"</span>
                     </p>
-                    <button onclick="restartGame()" class="px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold text-lg sm:text-2xl rounded-full shadow-[0_6px_0_#14532d] active:shadow-[0_0px_0_#14532d] active:translate-y-1 transition-all border-2 border-green-200">
+                    <button onclick="restartGame()" class="bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-bold rounded-full shadow-[0_4px_0_#14532d] active:shadow-[0_0px_0_#14532d] active:translate-y-1 transition-all border-2 border-green-200" style="font-size: 2.2cqi; padding: 1.5cqi 4cqi;">
                         Chơi lại từ đầu
                     </button>
                 </div>
@@ -71,11 +83,11 @@
         </div>
 
         <!-- ================= HỘP THOẠI PHẢN HỒI (ĐÚNG/SAI) ================= -->
-        <div id="modal-feedback" class="absolute inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm hidden">
-            <div id="feedback-card" class="p-6 sm:p-10 rounded-2xl sm:rounded-3xl border-4 sm:border-8 shadow-2xl text-center transform scale-110 transition-transform duration-300">
-                <div id="feedback-icon" class="text-5xl sm:text-7xl mb-2 sm:mb-4 animate-bounce"></div>
-                <h2 id="feedback-title" class="text-lg sm:text-3xl font-black"></h2>
-                <p id="feedback-desc" class="mt-2 text-sm sm:text-lg font-bold"></p>
+        <div id="modal-feedback" class="absolute inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div id="feedback-card" class="p-[4cqi] rounded-3xl border-4 md:border-8 shadow-2xl text-center transform scale-90 transition-transform duration-300">
+                <div id="feedback-icon" class="animate-bounce mb-[1cqi]" style="font-size: 8cqi;"></div>
+                <h2 id="feedback-title" class="font-black" style="font-size: 3.5cqi;"></h2>
+                <p id="feedback-desc" class="font-bold mt-[1cqi]" style="font-size: 2.2cqi;"></p>
             </div>
         </div>
 
@@ -83,7 +95,6 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // 1. Dữ liệu câu hỏi
         const QUESTIONS = [
             { id: 1, text: "Những bức tượng binh sĩ giống nhau được phát hiện trong công trình nào?", options: ["Vạn Lý Trường Thành", "Lăng mộ Tần Thủy Hoàng", "Cố Cung Bắc Kinh", "Chùa Thiếu Lâm"], correctAnswer: 1 },
             { id: 2, text: "Các tượng binh sĩ trong lăng mộ Tần Thủy Hoàng được làm bằng gì?", options: ["Đá", "Đồng", "Đất nung", "Gỗ"], correctAnswer: 2 },
@@ -97,7 +108,6 @@
             { id: 10, text: "Những công trình như Vạn Lý Trường Thành, Lăng mộ Tần Thủy Hoàng, Cố Cung Bắc Kinh cho thấy điều gì?", options: ["Trung Quốc có nhiều sông", "Trung Quốc có lịch sử và văn hóa lâu đời", "Trung Quốc có nhiều rừng", "Trung Quốc có nhiều đảo"], correctAnswer: 1 }
         ];
 
-        // 2. Tọa độ bản đồ và khung đáp án
         const MAP_NODES = [
             { id: 1, top: '83%', left: '13%' }, { id: 2, top: '74%', left: '23%' },
             { id: 3, top: '71%', left: '36%' }, { id: 4, top: '80%', left: '48%' },
@@ -106,25 +116,51 @@
             { id: 9, top: '22%', left: '76%' }, { id: 10, top: '17%', left: '91%' }
         ];
 
+        // Tọa độ 4 khung đáp án đã tinh chỉnh chính xác với ảnh 3.jpg
         const ANSWER_BOXES = [
-            { top: '23%', left: '9.5%', width: '38%', height: '32%' },  // A
-            { top: '23%', left: '52.5%', width: '38%', height: '32%' }, // B
-            { top: '58%', left: '9.5%', width: '38%', height: '32%' },  // C
-            { top: '58%', left: '52.5%', width: '38%', height: '32%' }  // D
+            { top: '22%', left: '9%', width: '39%', height: '33%' },  // A
+            { top: '22%', left: '52%', width: '39%', height: '33%' }, // B
+            { top: '58%', left: '9%', width: '39%', height: '33%' },  // C
+            { top: '58%', left: '52%', width: '39%', height: '33%' }  // D
         ];
 
-        // 3. Quản lý trạng thái Game
+        // --- KHỞI TẠO HỆ THỐNG ÂM THANH ---
+        const audioBGM = new Audio('https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3');
+        audioBGM.loop = true;
+        audioBGM.volume = 0.3; // Âm lượng nhạc nền
+
+        const sfxCorrect = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3');
+        const sfxWrong = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3');
+        const sfxWin = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.mp3');
+
+        let isMuted = false;
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-icon').innerText = isMuted ? '🔇' : '🔊';
+            audioBGM.muted = isMuted;
+            sfxCorrect.muted = isMuted;
+            sfxWrong.muted = isMuted;
+            sfxWin.muted = isMuted;
+        }
+
+        function playSound(sound) {
+            if (!isMuted) {
+                sound.currentTime = 0; // Tua lại từ đầu nếu đang phát dở
+                sound.play().catch(e => console.log("Trình duyệt chặn phát âm thanh:", e));
+            }
+        }
+        // ----------------------------------
+
         let currentLevel = 1;
         let isAnimating = false;
 
-        // Khởi tạo giao diện lần đầu
         function initGame() {
             createMapNodes();
             createAnswerBoxes();
             updateMapState();
         }
 
-        // Tạo các nút trên bản đồ
         function createMapNodes() {
             const container = document.getElementById('map-nodes-container');
             container.innerHTML = '';
@@ -140,7 +176,6 @@
             });
         }
 
-        // Tạo 4 khung đáp án
         function createAnswerBoxes() {
             const container = document.getElementById('answers-container');
             container.innerHTML = '';
@@ -150,32 +185,38 @@
                 btn.style.left = box.left;
                 btn.style.width = box.width;
                 btn.style.height = box.height;
-                btn.className = "absolute cursor-pointer rounded-lg sm:rounded-xl transition-all duration-200 hover:bg-black/5 active:scale-95 group flex flex-col items-center";
+                btn.className = "absolute cursor-pointer rounded-xl transition-transform duration-100 hover:scale-[1.02] active:scale-95 group outline-none";
                 btn.onclick = () => handleAnswer(index);
 
+                // Khung chữ chiếm phần trên (phần giấy)
+                // Khung Hover chiếm phần nút xanh phía dưới
                 btn.innerHTML = `
-                    <div class="w-full h-[65%] flex items-center justify-center p-2 sm:p-4">
-                        <span id="answer-text-${index}" class="text-[10px] sm:text-sm md:text-lg font-bold text-amber-900 text-center leading-tight group-hover:text-green-700 transition-colors"></span>
+                    <div class="absolute top-0 left-0 w-full h-[70%] flex items-center justify-center px-[6%]">
+                        <span id="answer-text-${index}" class="font-bold text-amber-950 text-center transition-colors group-hover:text-green-700 w-full leading-tight" style="font-size: 1.8cqi;"></span>
                     </div>
-                    <div class="w-[85%] h-[20%] mt-auto mb-[5%] rounded-full group-hover:bg-white/30 transition-colors flex items-center justify-center"></div>
+                    <div class="absolute bottom-[4%] left-[6%] right-[6%] h-[24%] rounded-full group-hover:bg-white/20 transition-colors"></div>
                 `;
                 container.appendChild(btn);
             });
         }
 
-        // Chuyển đổi màn hình
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            setTimeout(() => {
+                document.getElementById(screenId).classList.add('active');
+            }, 50);
         }
 
-        // Hành động: Bắt đầu trò chơi
         function startGame() {
             switchScreen('screen-map');
             updateMapState();
+            
+            // Bắt đầu phát nhạc nền khi người chơi tương tác lần đầu
+            if (!isMuted && audioBGM.paused) {
+                audioBGM.play().catch(e => console.log(e));
+            }
         }
 
-        // Cập nhật giao diện Bản đồ
         function updateMapState() {
             MAP_NODES.forEach(node => {
                 const btn = document.getElementById(`map-node-${node.id}`);
@@ -183,22 +224,20 @@
                 const isPassed = node.id < currentLevel;
 
                 let classes = "absolute rounded-full transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-all ";
-                if (isCurrent) classes += "cursor-pointer animate-pulse ring-4 ring-white bg-white/30 z-20";
+                if (isCurrent) classes += "cursor-pointer animate-pulse ring-4 ring-white bg-white/30 z-20 hover:bg-white/50";
                 else if (!isPassed) classes += "cursor-not-allowed";
                 
                 btn.className = classes;
                 btn.disabled = !isCurrent;
-                btn.innerHTML = isPassed ? '<div class="w-full h-full rounded-full bg-green-500/40"></div>' : '';
+                btn.innerHTML = isPassed ? '<div class="w-full h-full rounded-full bg-green-500/50"></div>' : '';
             });
 
-            // Di chuyển gấu trúc
             const panda = document.getElementById('panda');
             const targetNode = MAP_NODES[currentLevel - 1];
             panda.style.top = targetNode.top;
             panda.style.left = targetNode.left;
         }
 
-        // Hành động: Click vào điểm trên bản đồ
         function handleNodeClick(nodeId) {
             if (nodeId === currentLevel) {
                 updateQuestionState();
@@ -206,19 +245,17 @@
             }
         }
 
-        // Cập nhật nội dung Câu hỏi
         function updateQuestionState() {
             const question = QUESTIONS[currentLevel - 1];
-            document.getElementById('question-text').innerHTML = `<span class="text-amber-700 mr-2">Câu ${question.id}:</span>${question.text}`;
+            document.getElementById('question-text').innerHTML = `<span class="text-amber-700 mr-[1cqi]">Câu ${question.id}:</span>${question.text}`;
             
             question.options.forEach((opt, index) => {
                 document.getElementById(`answer-text-${index}`).innerText = `${String.fromCharCode(65 + index)}. ${opt}`;
             });
         }
 
-        // Hành động: Chọn đáp án
         function handleAnswer(selectedIndex) {
-            if (isAnimating) return; // Khóa click liên tục
+            if (isAnimating) return;
             isAnimating = true;
 
             const question = QUESTIONS[currentLevel - 1];
@@ -228,55 +265,67 @@
 
             setTimeout(() => {
                 hideFeedback();
-                if (isCorrect) {
-                    if (currentLevel === 10) {
-                        switchScreen('screen-won');
+                setTimeout(() => {
+                    if (isCorrect) {
+                        if (currentLevel === 10) {
+                            switchScreen('screen-won');
+                            playSound(sfxWin); // Phát nhạc chiến thắng
+                        } else {
+                            currentLevel++;
+                            updateMapState();
+                            switchScreen('screen-map');
+                        }
                     } else {
-                        currentLevel++;
-                        updateMapState();
+                        // Trả lời sai thì quay lại bản đồ chơi lại ô đó
                         switchScreen('screen-map');
                     }
-                }
-                isAnimating = false;
-            }, 2000); // Đợi 2 giây
+                    isAnimating = false;
+                }, 300);
+            }, 2000); 
         }
 
-        // Hiển thị/Ẩn thông báo đúng sai
         function showFeedback(isCorrect) {
             const modal = document.getElementById('modal-feedback');
             const card = document.getElementById('feedback-card');
             
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-90');
+            card.classList.add('scale-100');
+
             if (isCorrect) {
-                card.className = "p-6 sm:p-10 rounded-2xl sm:rounded-3xl border-4 sm:border-8 shadow-2xl text-center transform scale-110 transition-transform duration-300 bg-[#f0fdf4] border-green-500";
+                playSound(sfxCorrect); // Phát tiếng ĐÚNG
+                card.className = "p-[4cqi] rounded-3xl border-4 md:border-8 shadow-2xl text-center transform transition-transform duration-300 scale-100 bg-[#f0fdf4] border-green-500";
                 document.getElementById('feedback-icon').innerText = "🎉";
-                document.getElementById('feedback-title').className = "text-lg sm:text-3xl font-black text-green-700";
+                document.getElementById('feedback-title').className = "font-black text-green-700";
                 document.getElementById('feedback-title').innerText = "CHÚC MỪNG BẠN!";
-                document.getElementById('feedback-desc').className = "mt-2 text-sm sm:text-lg font-bold text-green-600";
+                document.getElementById('feedback-desc').className = "font-bold mt-[1cqi] text-green-600";
                 document.getElementById('feedback-desc').innerText = "Đáp án hoàn toàn chính xác";
             } else {
-                card.className = "p-6 sm:p-10 rounded-2xl sm:rounded-3xl border-4 sm:border-8 shadow-2xl text-center transform scale-110 transition-transform duration-300 bg-[#fef2f2] border-red-500";
+                playSound(sfxWrong); // Phát tiếng SAI
+                card.className = "p-[4cqi] rounded-3xl border-4 md:border-8 shadow-2xl text-center transform transition-transform duration-300 scale-100 bg-[#fef2f2] border-red-500";
                 document.getElementById('feedback-icon').innerText = "❌";
-                document.getElementById('feedback-title').className = "text-lg sm:text-3xl font-black text-red-700";
+                document.getElementById('feedback-title').className = "font-black text-red-700";
                 document.getElementById('feedback-title').innerText = "RẤT TIẾC!";
-                document.getElementById('feedback-desc').className = "mt-2 text-sm sm:text-lg font-bold text-red-600";
+                document.getElementById('feedback-desc').className = "font-bold mt-[1cqi] text-red-600";
                 document.getElementById('feedback-desc').innerText = "Bạn đã chọn sai mất rồi";
             }
-            
-            modal.classList.remove('hidden');
         }
 
         function hideFeedback() {
-            document.getElementById('modal-feedback').classList.add('hidden');
+            const modal = document.getElementById('modal-feedback');
+            const card = document.getElementById('feedback-card');
+            
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-90');
         }
 
-        // Hành động: Chơi lại từ đầu
         function restartGame() {
             currentLevel = 1;
             switchScreen('screen-start');
             updateMapState();
         }
 
-        // Khởi động script
         initGame();
     </script>
 </body>
