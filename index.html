@@ -11,20 +11,24 @@
         .screen { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
         .screen.active { display: block; opacity: 1; }
         
-        /* Container Queries: Chìa khóa để chữ co giãn hoàn hảo theo khung Game */
+        /* Container Queries & Tính toán kích thước phóng to tối đa */
         .game-board {
             container-type: inline-size;
-            aspect-ratio: 16/9;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            /* Giới hạn chiều rộng dựa trên chiều cao thực tế của trình duyệt để luôn giữ tỷ lệ 16:9 */
+            max-width: calc(100dvh * (16 / 9));
+            max-height: 100dvh;
         }
 
         /* Ẩn bớt thanh cuộn trên mobile */
-        body { overscroll-behavior-y: contain; }
+        body { overscroll-behavior-y: contain; margin: 0; padding: 0; }
     </style>
 </head>
-<body class="w-full h-screen bg-[#2c1e16] flex items-center justify-center p-0 md:p-2 m-0 overflow-hidden font-sans">
+<body class="w-full h-[100dvh] bg-[#2c1e16] flex items-center justify-center overflow-hidden font-sans">
 
-    <!-- Container chính giữ tỷ lệ 16:9 và định nghĩa Container Size -->
-    <div class="game-board relative w-full max-w-5xl bg-black shadow-2xl overflow-hidden md:rounded-xl ring-0 md:ring-4 ring-amber-900/50">
+    <!-- Container chính giữ tỷ lệ 16:9 và tự động co giãn hết cỡ -->
+    <div class="game-board relative bg-black shadow-2xl overflow-hidden">
         
         <!-- Nút Bật/Tắt Âm thanh -->
         <button id="btn-mute" onclick="toggleMute()" class="absolute top-[3%] right-[2%] z-50 bg-white/90 p-[1.5cqi] rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center aspect-square border-2 border-amber-900/20 hover:scale-105 active:scale-95" title="Bật/Tắt âm thanh">
