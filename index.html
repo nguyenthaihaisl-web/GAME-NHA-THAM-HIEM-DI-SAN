@@ -213,30 +213,116 @@
             { top: '58%', left: '52%', width: '39%', height: '33%' }  // D
         ];
 
-        // --- KHỞI TẠO HỆ THỐNG ÂM THANH (Đã đổi sang nguồn Google chuẩn) ---
-        const audioBGM = new Audio('https://actions.google.com/sounds/v1/ambiences/meadow_morning.ogg');
+        // --- KHỞI TẠO HỆ THỐNG ÂM THANH (GIẢI PHÁP TRIỆT ĐỂ 100%) ---
+        // Đổi sang nguồn nhạc nền phiêu lưu từ Pixabay (tương thích cực tốt với mọi trình duyệt)
+        const audioBGM = new Audio('https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3');
         audioBGM.loop = true;
-        audioBGM.volume = 0.4; // Âm lượng nhạc nền
-
-        const sfxCorrect = new Audio('https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg');
-        const sfxWrong = new Audio('https://actions.google.com/sounds/v1/cartoon/bonk.ogg');
-        const sfxWin = new Audio('https://actions.google.com/sounds/v1/cartoon/cartoon_success_fanfare.ogg');
+        audioBGM.volume = 0.3; // Âm lượng vừa phải
+        audioBGM.preload = 'auto'; // Tải sẵn nhạc
 
         let isMuted = false;
+        let isAudioUnlocked = false;
+
+        // MẸO MỞ KHÓA ÂM THANH TRÊN MỌI THIẾT BỊ:
+        // Lợi dụng cú chạm/click ĐẦU TIÊN của người chơi (ví dụ: khi nhấn vào ô nhập tên) để mở khóa quyền phát âm thanh
+        function unlockAudio() {
+            if (!isAudioUnlocked && !isMuted) {
+                // Phát rồi dừng ngay lập tức để lấy quyền mà người chơi không nhận ra
+                audioBGM.play().then(() => {
+                    audioBGM.pause();
+                    isAudioUnlocked = true;
+                }).catch(err => console.log("Đang chờ tương tác để mở khóa nhạc..."));
+                
+                initSynth(); // Mở khóa luôn bộ âm thanh hiệu ứng Ting/Bíp
+            }
+            // Gỡ bỏ sự kiện sau khi đã thử mở khóa để tối ưu hiệu suất
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        }
+        
+        // Lắng nghe mọi cú chạm đầu tiên trên toàn màn hình
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        // Bộ tổng hợp âm thanh (Synthesizer) tự tạo tiếng ĐÚNG/SAI mà không cần tải file!
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initSynth() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playCorrectSound() {
+            if(isMuted) return; initSynth();
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; // Tiếng Ting trong vắt
+            osc.frequency.setValueAtTime(659.25, t); 
+            osc.frequency.setValueAtTime(880, t + 0.1); 
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.5, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+            osc.start(t); osc.stop(t + 0.4);
+        }
+
+        function playWrongSound() {
+            if(isMuted) return; initSynth();
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth'; // Tiếng Bíp cảnh báo
+            osc.frequency.setValueAtTime(250, t);
+            osc.frequency.exponentialRampToValueAtTime(150, t + 0.3);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.5, t + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+            osc.start(t); osc.stop(t + 0.4);
+        }
+
+        function playWinSound() {
+            if(isMuted) return; initSynth();
+            const t = audioCtx.currentTime;
+            const notes = [
+                {f: 523.25, d: 0.15}, {f: 659.25, d: 0.15}, 
+                {f: 783.99, d: 0.15}, {f: 1046.50, d: 0.4}
+            ]; // Chuỗi giai điệu chiến thắng (Tèn ten ten tén)
+            let startTime = t;
+            notes.forEach(n => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'square'; // Tiếng máy chơi game cổ điển
+                osc.frequency.value = n.f;
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + n.d);
+                osc.start(startTime);
+                osc.stop(startTime + n.d);
+                startTime += n.d;
+            });
+        }
 
         function toggleMute() {
             isMuted = !isMuted;
             document.getElementById('mute-icon').innerText = isMuted ? '🔇' : '🔊';
-            audioBGM.muted = isMuted;
-            sfxCorrect.muted = isMuted;
-            sfxWrong.muted = isMuted;
-            sfxWin.muted = isMuted;
-        }
-
-        function playSound(sound) {
-            if (!isMuted) {
-                sound.currentTime = 0; // Tua lại từ đầu nếu đang phát dở
-                sound.play().catch(e => console.log("Trình duyệt chặn phát âm thanh:", e));
+            
+            if (isMuted) {
+                audioBGM.pause();
+            } else {
+                // Chỉ phát lại nhạc nền nếu đang chơi
+                if (document.getElementById('screen-map').classList.contains('active') || 
+                    document.getElementById('screen-question').classList.contains('active') ||
+                    document.getElementById('screen-won').classList.contains('active')) {
+                    audioBGM.play().catch(e => console.log(e));
+                }
             }
         }
         // ----------------------------------
@@ -381,19 +467,11 @@
             updateMapState();
             startTimer();
             
-            // --- MỞ KHÓA ÂM THANH (Sửa lỗi mất tiếng trên Safari / Mobile) ---
+            // Bật nhạc nền (Lúc này trình duyệt đã cấp quyền từ cú chạm khi nhập tên)
             if (!isMuted) {
-                // Phát nhạc nền
-                audioBGM.play().catch(e => console.log("Không thể phát nhạc nền:", e));
-                
-                // Mẹo: Phát "ảo" các hiệu ứng âm thanh 1 lần không có tiếng để trình duyệt cấp quyền
-                [sfxCorrect, sfxWrong, sfxWin].forEach(sound => {
-                    sound.volume = 0; // Tắt tiếng tạm thời
-                    sound.play().then(() => {
-                        sound.pause();
-                        sound.currentTime = 0;
-                        sound.volume = 1; // Khôi phục âm lượng để dùng khi trả lời
-                    }).catch(e => console.log("Không thể mở khóa SFX:", e));
+                initSynth(); 
+                audioBGM.play().catch(error => {
+                    console.log("Không thể phát nhạc nền:", error);
                 });
             }
         }
@@ -441,14 +519,17 @@
 
             const question = QUESTIONS[currentLevel - 1];
             const isCorrect = selectedIndex === question.correctAnswer;
+            const isFinalWin = isCorrect && currentLevel === 10;
             
-            showFeedback(isCorrect);
+            // Gọi hàm hiển thị feedback và CÙNG LÚC phát âm thanh ngay lập tức
+            // (Không để trong setTimeout để tránh bị Safari chặn âm thanh)
+            showFeedback(isCorrect, isFinalWin);
 
             setTimeout(() => {
                 hideFeedback();
                 setTimeout(() => {
                     if (isCorrect) {
-                        if (currentLevel === 10) {
+                        if (isFinalWin) {
                             stopTimer();
                             document.getElementById('timer-display').classList.add('hidden');
                             
@@ -461,7 +542,7 @@
                             document.getElementById('won-time').innerText = "⏳ " + formatTime(totalSeconds);
                             
                             switchScreen('screen-won');
-                            playSound(sfxWin); // Phát nhạc chiến thắng
+                            // Âm thanh chiến thắng đã được phát ở showFeedback() để không bị lỗi chặn
                         } else {
                             currentLevel++;
                             updateMapState();
@@ -476,7 +557,7 @@
             }, 2000); 
         }
 
-        function showFeedback(isCorrect) {
+        function showFeedback(isCorrect, isFinalWin) {
             const modal = document.getElementById('modal-feedback');
             const card = document.getElementById('feedback-card');
             const img = document.getElementById('feedback-image');
@@ -488,7 +569,13 @@
             img.classList.remove('hidden');
 
             if (isCorrect) {
-                playSound(sfxCorrect); // Phát tiếng ĐÚNG
+                // KIỂM TRA: NẾU LÀ CÂU CUỐI CÙNG THÌ PHÁT NHẠC CHIẾN THẮNG LUÔN
+                if (isFinalWin) {
+                    playWinSound();
+                } else {
+                    playCorrectSound(); // Phát tiếng ĐÚNG (Synth)
+                }
+                
                 card.className = "p-[4cqi] rounded-3xl border-4 md:border-8 shadow-2xl text-center transform transition-transform duration-300 scale-100 bg-[#f0fdf4] border-green-500 animate-glow flex flex-col items-center";
                 
                 // Nguồn ảnh cho đáp án ĐÚNG (mặt tiệc tùng)
@@ -500,7 +587,7 @@
                 document.getElementById('feedback-desc').className = "font-bold mt-[1cqi] text-green-600";
                 document.getElementById('feedback-desc').innerText = "Đáp án hoàn toàn chính xác";
             } else {
-                playSound(sfxWrong); // Phát tiếng SAI
+                playWrongSound(); // Phát tiếng SAI (Synth)
                 modal.classList.add('bg-flash-danger'); // Chớp nền đỏ
                 card.className = "p-[4cqi] rounded-3xl border-4 md:border-8 shadow-2xl text-center transform transition-transform duration-300 scale-100 bg-[#fef2f2] border-red-500 animate-shake flex flex-col items-center";
                 
